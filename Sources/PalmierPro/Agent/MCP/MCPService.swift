@@ -87,13 +87,17 @@ final class MCPService {
         }
         self.httpServer = httpServer
         Task { @MainActor [weak self] in
+            guard let self, self.httpServer === httpServer else { return }
             do {
                 try await httpServer.start()
-                guard let self, self.httpServer === httpServer else { return }
+                guard self.httpServer === httpServer else {
+                    await httpServer.stop()
+                    return
+                }
                 Log.mcp.notice("http server started host=\(bindHost) port=\(Self.port)")
                 self.isRunning = true
             } catch {
-                guard let self, self.httpServer === httpServer else { return }
+                guard self.httpServer === httpServer else { return }
                 Log.mcp.error("http server failed to start: \(error.localizedDescription)")
                 self.isRunning = false
             }
